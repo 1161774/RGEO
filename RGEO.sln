@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27428.2043
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{803FD0C6-D64E-4E16-9DC3-1DAEC859A3D2}") = "RGEO", "RGEO.vgdbproj", "{609AB9EB-C52E-4B40-9192-D59F6C241659}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|VisualGDB = Debug|VisualGDB
+		Release|VisualGDB = Release|VisualGDB
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{609AB9EB-C52E-4B40-9192-D59F6C241659}.Debug|VisualGDB.ActiveCfg = Debug|VisualGDB
+		{609AB9EB-C52E-4B40-9192-D59F6C241659}.Debug|VisualGDB.Build.0 = Debug|VisualGDB
+		{609AB9EB-C52E-4B40-9192-D59F6C241659}.Release|VisualGDB.ActiveCfg = Release|VisualGDB
+		{609AB9EB-C52E-4B40-9192-D59F6C241659}.Release|VisualGDB.Build.0 = Release|VisualGDB
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {22F75836-507B-4738-BB24-F365BCE22157}
+	EndGlobalSection
+EndGlobal
