@@ -108,9 +108,7 @@ static void GPSTask()
 
 //	loc_t gpsData;
 
-	char * pch;
-
-	int16_t i, start, len;
+	int16_t i, start = -1;
 	
 	while (1) {
 
@@ -119,7 +117,7 @@ static void GPSTask()
 		// Read data from the UART
 		int len = uart_read_bytes(UART_NUM_2, data, BUF_SIZE, 20 / portTICK_RATE_MS);
 
-		start = -1;
+		
 		
 		for (i = 0; i < len; i++)
 		{
@@ -127,12 +125,30 @@ static void GPSTask()
 			{
 				start = i;				
 			}
-			if (data[i] == '\r' && start > 0)
+			else if (data[i] == '\r')
 			{
-				len = start - 1;
-				memcpy(message, data, len);
+				if (i < start)
+				{
+					memcpy(message + strlen((const char *)message), data, i);
+					message[i] = 0;
+				}
+				if (start >= 0)
+				{
+					
+					memcpy(message, data + start, i - start);
+					message[i - start] = 0;
+				}
+				
+				ESP_LOGI(GPS, "%s", message);
+				
 				start = -1;
 			}
+		}
+		
+		if (start >= 0)
+		{
+			memcpy(message, data + start, len - start);
+			message[len - start] = 0;
 		}
 
 		
