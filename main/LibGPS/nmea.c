@@ -6,7 +6,7 @@
 
 #include "nmea.h"
 
-void nmea_parse_gpgga(char *nmea, gpgga_t *loc)
+void nmea_parse_gpgga(uint8_t *nmea, gpgga_t *loc)
 {
     char *p = nmea;
 
@@ -56,7 +56,7 @@ void nmea_parse_gpgga(char *nmea, gpgga_t *loc)
     loc->altitude = atof(p);
 }
 
-void nmea_parse_gprmc(char *nmea, gprmc_t *loc)
+void nmea_parse_gprmc(uint8_t *nmea, gprmc_t *loc)
 {
     char *p = nmea;
 
@@ -110,26 +110,26 @@ void nmea_parse_gprmc(char *nmea, gprmc_t *loc)
  * @param message The NMEA message
  * @return The type of message if it is valid
  */
-uint8_t nmea_get_message_type(const char *message)
-{
-    uint8_t checksum = 0;
-    if ((checksum = nmea_valid_checksum(message)) != _EMPTY) {
-        return checksum;
-    }
+//uint8_t nmea_get_message_type(const uint8_t *message)
+//{
+//    uint8_t checksum = 0;
+//    if ((checksum = nmea_valid_checksum(message)) != _EMPTY) {
+//        return checksum;
+//    }
+//
+//    if (strstr(message, NMEA_GPGGA_STR) != NULL) {
+//        return NMEA_GPGGA;
+//    }
+//
+//    if (strstr(message, NMEA_GPRMC_STR) != NULL) {
+//        return NMEA_GPRMC;
+//    }
+//
+//    return NMEA_UNKNOWN;
+//}
 
-    if (strstr(message, NMEA_GPGGA_STR) != NULL) {
-        return NMEA_GPGGA;
-    }
-
-    if (strstr(message, NMEA_GPRMC_STR) != NULL) {
-        return NMEA_GPRMC;
-    }
-
-    return NMEA_UNKNOWN;
-}
-
-uint8_t nmea_valid_checksum(const char *message) {
-    uint8_t checksum= (uint8_t)strtol(strchr(message, '*')+1, NULL, 16);
+uint8_t nmea_valid_checksum(const uint8_t *message) {
+	uint8_t checksum = (uint8_t)strtol(strchr((const char *)message, '*') + 1, NULL, 16);
 
     char p;
     uint8_t sum = 0;
@@ -144,4 +144,31 @@ uint8_t nmea_valid_checksum(const char *message) {
 
     return _EMPTY;
 }
+
+
+// Convert lat e lon to decimals (from deg)
+void gps_convert_deg_to_dec(double *latitude, char ns, double *longitude, char we)
+{
+	double lat = (ns == 'N') ? *latitude : -1 * (*latitude);
+	double lon = (we == 'E') ? *longitude : -1 * (*longitude);
+
+	*latitude = gps_deg_dec(lat);
+	*longitude = gps_deg_dec(lon);
+}
+
+double gps_deg_dec(double deg_point)
+{
+	double ddeg;
+	double sec = modf(deg_point, &ddeg) * 60;
+	int deg = (int)(ddeg / 100);
+	int min = (int)(deg_point - (deg * 100));
+
+	double absdlat = round(deg * 1000000.);
+	double absmlat = round(min * 1000000.);
+	double absslat = round(sec * 1000000.);
+
+	return round(absdlat + (absmlat / 60) + (absslat / 3600)) / 1000000;
+}
+
+
 
