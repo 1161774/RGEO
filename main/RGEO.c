@@ -49,9 +49,9 @@ static const char* LCD= "LCD";
 
 #define BUF_SIZE (1024)
 
-static loc_t coord;
-static gpgga_t gpgga;
-static gprmc_t gprmc;
+//static loc_t coord;
+//static gpgga_t gpgga;
+//static gprmc_t gprmc;
 
 
 void znmea_parse_gpgga(uint8_t *nmea, gpgga_t *loc)
@@ -252,7 +252,6 @@ static void GPSTask()
 	uart_driver_install(UART_NUM_2, BUF_SIZE * 2, 0, 0, NULL, 0);
 
 
-
 	// Configure buffers for the incoming data
 	uint8_t *data = (uint8_t *) malloc(BUF_SIZE);
 	uint8_t *message = (uint8_t *) malloc(BUF_SIZE);
@@ -260,13 +259,14 @@ static void GPSTask()
 
 	ESP_LOGI(GPS, "UART Configured");
 
-//	loc_t coord;
+	loc_t coord;
+	gpgga_t gpgga;
+	gprmc_t gprmc;
+
 	
 	int16_t i, start = -1, msgLen;
 	
 	while (1) {
-
-
 
 		// Read data from the UART
 		int len = uart_read_bytes(UART_NUM_2, data, BUF_SIZE, 20 / portTICK_RATE_MS);
@@ -275,11 +275,8 @@ static void GPSTask()
 		
 		
 		if (len > 0)
-		{
-			
+		{		
 			ESP_LOGV(GPS, "Raw: %s", data);
-
-		
 					
 			for (i = 0; i < len; i++)
 			{
@@ -301,16 +298,9 @@ static void GPSTask()
 						message[i - start] = 0;
 					}
 					start = -1;
-					ESP_LOGI(GPS, "%s", message);
-					
-					
-//					gpgga_t gpgga;
-//					gprmc_t gprmc;
+					ESP_LOGD(GPS, "%s", message);
 
-//					znmea_get_message_type(message);
-					
-					switch (znmea_get_message_type((const uint8_t *)message)){
-//					switch (999) {
+					switch (znmea_get_message_type((const uint8_t *)message)) {
 					case NMEA_GPGGA:
 						znmea_parse_gpgga(message, &gpgga);
 						
@@ -320,9 +310,9 @@ static void GPSTask()
 						coord.longitude = gpgga.longitude;
 						coord.altitude = gpgga.altitude;
 						
-//						ESP_LOGI(GPS, "Latitude:\t%f", coord.latitude);
-//						ESP_LOGI(GPS, "Longitude:\t%f", coord.longitude);
-//						ESP_LOGI(GPS, "Altitude:\t%f", coord.altitude);
+						ESP_LOGI(GPS, "Latitude:\t%f", coord.latitude);
+						ESP_LOGI(GPS, "Longitude:\t%f", coord.longitude);
+						ESP_LOGI(GPS, "Altitude:\t%f", coord.altitude);
 
 						break;
 					case NMEA_GPRMC:
@@ -331,12 +321,11 @@ static void GPSTask()
 						coord.speed = gprmc.speed;
 						coord.course = gprmc.course;
 						
-//						ESP_LOGI(GPS, "Speed\t%f", coord.speed);
-//						ESP_LOGI(GPS, "Course\t%f", coord.course);
+						ESP_LOGI(GPS, "Speed\t\t%f", coord.speed);
+						ESP_LOGI(GPS, "Course\t\t%f", coord.course);
 
 						break;
 					}
-
 				}
 			}
 		
@@ -345,8 +334,6 @@ static void GPSTask()
 				memcpy(message, data + start, len - start);
 				message[len - start] = 0;
 			}
-						
-			//		gps_location(&gpsData);
 		}
 	}
 		
