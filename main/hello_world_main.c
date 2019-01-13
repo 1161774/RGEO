@@ -6,6 +6,18 @@
    software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
    CONDITIONS OF ANY KIND, either express or implied.
 */
+
+
+
+/*
+ *
+ *	TODO: GPS Location logging
+ *
+ *
+ *
+ **/
+
+
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -37,10 +49,14 @@ static const char* LCD= "LCD";
 
 #define BUF_SIZE (1024)
 
+static loc_t coord;
+static gpgga_t gpgga;
+static gprmc_t gprmc;
+
 
 void znmea_parse_gpgga(uint8_t *nmea, gpgga_t *loc)
 {
-	char *p = (uint8_t)nmea;
+	char *p = (char *)nmea;
 
 	p = strchr(p, ',') + 1;  //skip time
 
@@ -90,7 +106,7 @@ void znmea_parse_gpgga(uint8_t *nmea, gpgga_t *loc)
 
 void znmea_parse_gprmc(uint8_t *nmea, gprmc_t *loc)
 {
-	char *p = (uint8_t)nmea;
+	char *p = (char *)nmea;
 
 	p = strchr(p, ',') + 1;  //skip time
 	p = strchr(p, ',') + 1;  //skip status
@@ -139,15 +155,15 @@ void znmea_parse_gprmc(uint8_t *nmea, gprmc_t *loc)
 double zgps_deg_dec(double deg_point)
 {
 	double ddeg;
-	double sec = modf(deg_point, &ddeg) * 60;
-	int deg = (int)(ddeg / 100);
-	int min = (int)(deg_point - (deg * 100));
+	double sec = modf(deg_point, &ddeg) * 60.0;
+	int deg = (int)(ddeg / 100.0);
+	int min = (int)(deg_point - (deg * 100.0));
 
-	double absdlat = round(deg * 1000000.);
-	double absmlat = round(min * 1000000.);
-	double absslat = round(sec * 1000000.);
+	double absdlat = round(deg * 1000000.0);
+	double absmlat = round(min * 1000000.0);
+	double absslat = round(sec * 1000000.0);
 
-	return round(absdlat + (absmlat / 60) + (absslat / 3600)) / 1000000;
+	return round(absdlat + (absmlat / 60.0) + (absslat / 3600.0)) / 1000000.0;
 }
 
 // Convert lat e lon to decimals (from deg)
@@ -244,7 +260,7 @@ static void GPSTask()
 
 	ESP_LOGI(GPS, "UART Configured");
 
-	loc_t coord;
+//	loc_t coord;
 	
 	int16_t i, start = -1, msgLen;
 	
@@ -285,11 +301,11 @@ static void GPSTask()
 						message[i - start] = 0;
 					}
 					start = -1;
-					ESP_LOGD(GPS, "%s", message);
+					ESP_LOGI(GPS, "%s", message);
 					
 					
-					gpgga_t gpgga;
-					gprmc_t gprmc;
+//					gpgga_t gpgga;
+//					gprmc_t gprmc;
 
 //					znmea_get_message_type(message);
 					
@@ -303,6 +319,10 @@ static void GPSTask()
 						coord.latitude = gpgga.latitude;
 						coord.longitude = gpgga.longitude;
 						coord.altitude = gpgga.altitude;
+						
+//						ESP_LOGI(GPS, "Latitude:\t%f", coord.latitude);
+//						ESP_LOGI(GPS, "Longitude:\t%f", coord.longitude);
+//						ESP_LOGI(GPS, "Altitude:\t%f", coord.altitude);
 
 						break;
 					case NMEA_GPRMC:
@@ -310,6 +330,9 @@ static void GPSTask()
 
 						coord.speed = gprmc.speed;
 						coord.course = gprmc.course;
+						
+//						ESP_LOGI(GPS, "Speed\t%f", coord.speed);
+//						ESP_LOGI(GPS, "Course\t%f", coord.course);
 
 						break;
 					}
@@ -332,30 +355,30 @@ static void GPSTask()
 }
 
 
-//static void LCDTask()
-//{
-//	ESP_LOGI(LCD, "Start LCD");
-//	
-//	int i2c_master_port = I2C_NUM_0;
-//	i2c_config_t conf;
-//	conf.mode = I2C_MODE_MASTER;
-//	conf.sda_io_num = GPIO_NUM_31;
-//	conf.sda_pullup_en = GPIO_PULLUP_ENABLE;
-//	conf.scl_io_num = GPIO_NUM_17;
-//	conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
-//	conf.master.clk_speed = I2C_EXAMPLE_MASTER_FREQ_HZ;
-//	i2c_param_config(i2c_master_port, &conf);
-//	i2c_driver_install(i2c_master_port,
-//		conf.mode,
-//		I2C_EXAMPLE_MASTER_RX_BUF_DISABLE,
-//		I2C_EXAMPLE_MASTER_TX_BUF_DISABLE,
-//		0);
-//	
-//
-//	ESP_LOGW(LCD, "LCD TASK ENDED");
-//	vTaskDelete(NULL);
-//
-//}
+static void LCDTask()
+{
+	ESP_LOGI(LCD, "Start LCD");
+	
+	int i2c_master_port = I2C_NUM_0;
+	i2c_config_t conf;
+	conf.mode = I2C_MODE_MASTER;
+	conf.sda_io_num = GPIO_NUM_18;
+	conf.sda_pullup_en = GPIO_PULLUP_ENABLE;
+	conf.scl_io_num = GPIO_NUM_19;
+	conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
+	conf.master.clk_speed = 100000;
+	i2c_param_config(i2c_master_port, &conf);
+	i2c_driver_install(i2c_master_port,
+		conf.mode,
+		0,
+		0,
+		0);
+	
+
+	ESP_LOGW(LCD, "LCD TASK ENDED");
+	vTaskDelete(NULL);
+
+}
 
 
 
@@ -363,6 +386,7 @@ void app_main()
 {
 	
 	esp_log_level_set(GPS, ESP_LOG_DEBUG);
+	
 	
 	
 	xTaskCreate(&GPSTask, "GPS", 2048, NULL, 3, NULL);
