@@ -515,7 +515,7 @@ static void LCDTask()
 	ret = i2c_write(I2C_NUM_0, dat, i2cIndex);
 	
 	
-	memset(display_buffer, 0XA5, 33);   
+	memset(display_buffer, 0XAA, 33);   
 
 	display_buffer[0] = 0x40;
 	
