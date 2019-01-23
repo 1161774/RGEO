@@ -79,6 +79,16 @@ static const char* LCD= "LCD";
 
 
 
+
+typedef enum
+{
+	COMMAND,
+	DATA
+} I2CMode; 
+
+
+
+
 uint8_t display_buffer[1024];
 
 
@@ -376,11 +386,40 @@ static void GPSTask()
 #define ACK_CHECK_EN                       0x1              /*!< I2C master will check ack from slave*/
 
 
-static esp_err_t i2c_write(i2c_port_t i2c_num, uint8_t* data_wr, size_t size)
+//static void i2c_write(i2c_port_t i2c_num, uint8_t* data_wr, size_t size, I2CMode Mode)
+//{
+//	i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+//	i2c_master_start(cmd);
+//	i2c_master_write_byte(cmd, (ESP_SLAVE_ADDR << 1) | WRITE_BIT, ACK_CHECK_EN);
+//	i2c_master_write_byte(cmd, (Mode == COMMAND ? 0x00 : 0x40), ACK_CHECK_EN);
+//	uint8_t byteCount = 1;
+//
+//	while (size--)
+//	{
+//		if (byteCount >= 32)
+//		{
+//			i2c_master_stop(cmd);
+//			i2c_master_cmd_begin(i2c_num, cmd, 1000 / portTICK_RATE_MS);
+//			i2c_master_start(cmd);
+//			i2c_master_write_byte(cmd, (ESP_SLAVE_ADDR << 1) | WRITE_BIT, ACK_CHECK_EN);
+//			i2c_master_write_byte(cmd, (Mode == COMMAND ? 0x00 : 0x40), ACK_CHECK_EN);
+//			byteCount = 1;
+//		}
+//		i2c_master_write(cmd, data_wr, size, ACK_CHECK_EN);
+//		i2c_master_stop(cmd);
+//		i2c_master_cmd_begin(i2c_num, cmd, 1000 / portTICK_RATE_MS);
+//	}
+//	
+//	i2c_cmd_link_delete(cmd);
+//}
+
+
+static esp_err_t i2c_write(i2c_port_t i2c_num, uint8_t* data_wr, size_t size, I2CMode Mode)
 {
 	volatile i2c_cmd_handle_t cmd = i2c_cmd_link_create();
 	i2c_master_start(cmd);
 	i2c_master_write_byte(cmd, (ESP_SLAVE_ADDR << 1) | WRITE_BIT, ACK_CHECK_EN);
+	i2c_master_write_byte(cmd, (Mode == COMMAND ? 0x00 : 0x40), ACK_CHECK_EN);
 	i2c_master_write(cmd, data_wr, size, ACK_CHECK_EN);
 	i2c_master_stop(cmd);
 	esp_err_t ret = i2c_master_cmd_begin(i2c_num, cmd, 1000 / portTICK_RATE_MS);
@@ -388,6 +427,26 @@ static esp_err_t i2c_write(i2c_port_t i2c_num, uint8_t* data_wr, size_t size)
 	return ret;
 }
 
+
+// Issue list of commands to SSD1306, same rules as above re: transactions.
+// This is a private function, not exposed.
+//void Adafruit_SSD1306::ssd1306_commandList(const uint8_t *c, uint8_t n) {
+//		 // I2C
+//	  wire->beginTransmission(i2caddr);
+//		WIRE_WRITE((uint8_t)0x00);  // Co = 0, D/C = 0
+//		uint8_t bytesOut = 1;
+//		while (n--) {
+//			if (bytesOut >= WIRE_MAX) {
+//				wire->endTransmission();
+//				wire->beginTransmission(i2caddr);
+//				WIRE_WRITE((uint8_t)0x00);  // Co = 0, D/C = 0
+//				bytesOut = 1;
+//			}
+//			WIRE_WRITE(pgm_read_byte(c++));
+//			bytesOut++;
+//		}
+//		wire->endTransmission();
+//}
 
 
 
@@ -415,8 +474,7 @@ static void LCDTask()
 	
 	
 	uint16_t i2cIndex;
-	volatile uint8_t *dat = malloc(1000);
-	esp_err_t ret;
+	uint8_t *dat = malloc(1000);
 
 	memset(dat, 0, 1000);
 
@@ -426,67 +484,67 @@ static void LCDTask()
 	#define HEIGHT 32
 	
 	i2cIndex = 0;
-	*(dat + i2cIndex++) = 0;     							// 0x00
+//	*(dat + i2cIndex++) = 0;     							// 0x00
 	*(dat + i2cIndex++) = SSD1306_DISPLAYOFF;     			// 0xAE
 	*(dat + i2cIndex++) = SSD1306_SETDISPLAYCLOCKDIV;    	// 0xD5
 	*(dat + i2cIndex++) = 0x80;    						// the suggested ratio 0x80
 	*(dat + i2cIndex++) = SSD1306_SETMULTIPLEX;            // 0xA8
 
-	ret = i2c_write(I2C_NUM_0, dat, i2cIndex);
+	i2c_write(I2C_NUM_0, dat, i2cIndex, COMMAND);
 
 	i2cIndex = 0;
-	*(dat + i2cIndex++) = 0;      							// 0x00
+//	*(dat + i2cIndex++) = 0;      							// 0x00
 	*(dat + i2cIndex++) = HEIGHT - 1;
 
-	ret = i2c_write(I2C_NUM_0, dat, i2cIndex);
+	i2c_write(I2C_NUM_0, dat, i2cIndex, COMMAND);
 
 	i2cIndex = 0;
-	*(dat + i2cIndex++) = 0;       							// 0x00
+//	*(dat + i2cIndex++) = 0;       							// 0x00
 	*(dat + i2cIndex++) = SSD1306_SETDISPLAYOFFSET;     	// 0xD3
 	*(dat + i2cIndex++) = 0x0;    							// no offset
 	*(dat + i2cIndex++) = SSD1306_SETSTARTLINE | 0x0;    	// line #0 0x40
 	*(dat + i2cIndex++) = SSD1306_CHARGEPUMP;    			// 0x8D
 
-	ret = i2c_write(I2C_NUM_0, dat, i2cIndex);
+	i2c_write(I2C_NUM_0, dat, i2cIndex, COMMAND);
 
 	i2cIndex = 0;
-	*(dat + i2cIndex++) = 0;       							// 0x00
+//	*(dat + i2cIndex++) = 0;       							// 0x00
 	*(dat + i2cIndex++) = 0x14;     						// Could be 0x10, could be 0x14
 
-	ret = i2c_write(I2C_NUM_0, dat, i2cIndex);
+	i2c_write(I2C_NUM_0, dat, i2cIndex, COMMAND);
 
 	i2cIndex = 0;
-	*(dat + i2cIndex++) = 0;       							// 0x00
+//	*(dat + i2cIndex++) = 0;       							// 0x00
 	*(dat + i2cIndex++) = SSD1306_MEMORYMODE;      			// 0x20
 	*(dat + i2cIndex++) = 0x00;    						// 0x0 act like ks0108
 	*(dat + i2cIndex++) = SSD1306_SEGREMAP | 0x1;
 	*(dat + i2cIndex++) = SSD1306_COMSCANDEC;
 
-	ret = i2c_write(I2C_NUM_0, dat, i2cIndex);
+	i2c_write(I2C_NUM_0, dat, i2cIndex, COMMAND);
 
 	i2cIndex = 0;
-	*(dat + i2cIndex++) = 0;       							// 0x00
+//	*(dat + i2cIndex++) = 0;       							// 0x00
 	*(dat + i2cIndex++) = SSD1306_SETCOMPINS;     			// 0xDA
 	*(dat + i2cIndex++) = 0x02;
 	*(dat + i2cIndex++) = SSD1306_SETCONTRAST;    			// 0x81
 	*(dat + i2cIndex++) = 0x8F;
 
-	ret = i2c_write(I2C_NUM_0, dat, i2cIndex);
+	i2c_write(I2C_NUM_0, dat, i2cIndex, COMMAND);
 
 	i2cIndex = 0;
-	*(dat + i2cIndex++) = 0;       							// 0x00
+//	*(dat + i2cIndex++) = 0;       							// 0x00
 	*(dat + i2cIndex++) = SSD1306_SETPRECHARGE;     		// 0xd9
 
-	ret = i2c_write(I2C_NUM_0, dat, i2cIndex);
+	i2c_write(I2C_NUM_0, dat, i2cIndex, COMMAND);
 
 	i2cIndex = 0;
-	*(dat + i2cIndex++) = 0;       							// 0x00
+//	*(dat + i2cIndex++) = 0;       							// 0x00
 	*(dat + i2cIndex++) = 0xF1;     						// Could be 0x22, could be 0xF1
 
-	ret = i2c_write(I2C_NUM_0, dat, i2cIndex);
+	i2c_write(I2C_NUM_0, dat, i2cIndex, COMMAND);
 
 	i2cIndex = 0;
-	*(dat + i2cIndex++) = 0;       							// 0x00
+//	*(dat + i2cIndex++) = 0;       							// 0x00
 	*(dat + i2cIndex++) = SSD1306_SETVCOMDETECT;     		// 0xDB
 	*(dat + i2cIndex++) = 0x40;
 	*(dat + i2cIndex++) = SSD1306_DISPLAYALLON_RESUME;    	// 0xA4
@@ -494,38 +552,38 @@ static void LCDTask()
 	*(dat + i2cIndex++) = SSD1306_DEACTIVATE_SCROLL;
 	*(dat + i2cIndex++) = SSD1306_DISPLAYON;
 
-	ret = i2c_write(I2C_NUM_0, dat, i2cIndex);
+	i2c_write(I2C_NUM_0, dat, i2cIndex, COMMAND);
 	
 	
 	
 	
 	i2cIndex = 0;
-	*(dat + i2cIndex++) = 0x00;  							// 
+//	*(dat + i2cIndex++) = 0x00;  							// 
 	*(dat + i2cIndex++) = 0x22;   				// 0x22 COMMAND
 	*(dat + i2cIndex++) = 0x00;  							// Start Page address
 	*(dat + i2cIndex++) = 0xFF;   							// Start Page address
 	*(dat + i2cIndex++) = 0x21; 							
 	*(dat + i2cIndex++) = 0x00;
-	ret = i2c_write(I2C_NUM_0, dat, i2cIndex);
+	i2c_write(I2C_NUM_0, dat, i2cIndex, COMMAND);
 
 	i2cIndex = 0;
-	*(dat + i2cIndex++) = 0;       							// 0x00
+//	*(dat + i2cIndex++) = 0;       							// 0x00
 	*(dat + i2cIndex++) = 0x7F; 							
 
-	ret = i2c_write(I2C_NUM_0, dat, i2cIndex);
+	i2c_write(I2C_NUM_0, dat, i2cIndex, COMMAND);
 	
 	
-	memset(display_buffer, 0XAA, 33);   
+	memset(display_buffer, 0X55, 33);   
 
-	display_buffer[0] = 0x40;
+//	display_buffer[0] = 0x40;
 	
 
 	for (uint16_t j = 0; j < 16; j++)
 	{
-		i2c_write(I2C_NUM_0, display_buffer, 32);
+		i2c_write(I2C_NUM_0, display_buffer, 32, DATA);
 	}
 
-	i2c_write(I2C_NUM_0, display_buffer, 17);
+//	i2c_write(I2C_NUM_0, display_buffer, 17, DATA);
 
 	
 	ESP_LOGW(LCD, "Well that worked at least");
