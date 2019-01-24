@@ -8,7 +8,7 @@
 
 #include "driver/uart.h"
 
-#include "GPS/GPS.h"
+#include "Peripherals/GPS.h"
 
 
 void nmea_parse_gpgga(uint8_t *nmea, gpgga_t *loc)

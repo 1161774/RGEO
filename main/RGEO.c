@@ -37,8 +37,8 @@
 
 #include "nvs.h"
 #include "nvs_flash.h"
-#include "GPS/GPS.h"
-#include "LCD/LCD.h"
+#include "Peripherals/GPS.h"
+#include "Peripherals/LCD.h"
 
 
 extern void GPSTask();

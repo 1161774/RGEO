@@ -5,7 +5,7 @@
 
 #include "esp_log.h"
 
-#include "LCD/LCD.h"
+#include "Peripherals/LCD.h"
 
 
 
@@ -137,7 +137,7 @@ void LCDTask()
 	i2c_write(I2C_NUM_0, dat, i2cIndex, COMMAND);
 	
 
-	memset(display_buffer, 0X55, 512);   
+	memset(display_buffer, 0x11, 512);   
 
 	
 	i2c_write(I2C_NUM_0, display_buffer, 512, DATA);
