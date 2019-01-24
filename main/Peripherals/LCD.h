@@ -28,6 +28,7 @@
 #define	SSD1306_PAGEADDR			0x22
 #define	SSD1306_LCDWIDTH			128
 #define	SSD1306_LCDHEIGHT			32
+#define HEIGHT						32
 
 
 
@@ -52,5 +53,10 @@ typedef enum
 
 
 uint8_t display_buffer[1024];
+
+
+void I2C_Write();
+
+void I2C_Init();
 
 void LCDTask();
