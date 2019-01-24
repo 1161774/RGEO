@@ -15,6 +15,10 @@
 #define NMEA_CHECKSUM_ERR 0x80
 #define NMEA_MESSAGE_ERR 0xC0
 
+#define BUF_SIZE (1024)
+
+extern const char* GPS;
+
 
 struct location {
 	double latitude;
@@ -66,4 +70,6 @@ double gps_deg_dec(double deg_point);
 void gps_convert_deg_to_dec(double *latitude, char ns, double *longitude, char we);
 uint8_t nmea_valid_checksum(const uint8_t *message);
 uint8_t nmea_get_message_type(const uint8_t *message);
+
+void GPSTask();
 

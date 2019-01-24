@@ -4,6 +4,9 @@
 #include <inttypes.h>
 #include <math.h>
 
+#include "esp_log.h"
+
+#include "driver/uart.h"
 
 #include "GPS/GPS.h"
 
@@ -169,5 +172,130 @@ uint8_t nmea_get_message_type(const uint8_t *message)
 	}
 
 	return NMEA_UNKNOWN;
+}
+
+
+
+void UART_Init()
+{
+	/* Configure parameters of an UART driver,
+
+	 * communication pins and install the driver */
+
+	uart_config_t uart_config = {
+
+		.baud_rate = 9600,
+
+		.data_bits = UART_DATA_8_BITS,
+
+		.parity = UART_PARITY_DISABLE,
+
+		.stop_bits = UART_STOP_BITS_1,
+
+		.flow_ctrl = UART_HW_FLOWCTRL_DISABLE
+
+	};
+
+	uart_param_config(UART_NUM_2, &uart_config);
+
+	uart_set_pin(UART_NUM_2, GPIO_NUM_17, GPIO_NUM_16, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+
+	uart_driver_install(UART_NUM_2, BUF_SIZE * 2, 0, 0, NULL, 0);
+
+}
+
+
+
+void GPSTask()
+{
+	ESP_LOGI(GPS, "Start UART");
+	UART_Init();
+
+	// Configure buffers for the incoming data
+	uint8_t *data = (uint8_t *) malloc(BUF_SIZE);
+	uint8_t *message = (uint8_t *) malloc(BUF_SIZE);
+
+	loc_t coord;
+	gpgga_t gpgga;
+	gprmc_t gprmc;
+	
+	int16_t i, start = -1, msgLen;
+
+	ESP_LOGI(GPS, "UART Configured");
+
+	
+	while (1) {
+
+		// Read data from the UART
+		int len = uart_read_bytes(UART_NUM_2, data, BUF_SIZE, 20 / portTICK_RATE_MS);
+
+		data[len] = 0;
+		
+		
+		if (len > 0)
+		{		
+			ESP_LOGV(GPS, "Raw: %s", data);
+					
+			for (i = 0; i < len; i++)
+			{
+				if (data[i] == '$')
+				{
+					start = i;				
+				}
+				else if (data[i] == '\r')
+				{
+					if (i < start)
+					{
+						msgLen = strlen((const char *)message);
+						memcpy(message + msgLen, data, i);
+						message[msgLen + i] = 0;
+					}
+					else if (start >= 0)
+					{
+						memcpy(message, data + start, i - start);
+						message[i - start] = 0;
+					}
+					start = -1;
+					ESP_LOGD(GPS, "%s", message);
+
+					switch (nmea_get_message_type((const uint8_t *)message)) {
+					case NMEA_GPGGA:
+						nmea_parse_gpgga(message, &gpgga);
+						
+						gps_convert_deg_to_dec(&(gpgga.latitude), gpgga.lat, &(gpgga.longitude), gpgga.lon);
+
+						coord.latitude = gpgga.latitude;
+						coord.longitude = gpgga.longitude;
+						coord.altitude = gpgga.altitude;
+						
+						ESP_LOGI(GPS, "Latitude:\t%f", coord.latitude);
+						ESP_LOGI(GPS, "Longitude:\t%f", coord.longitude);
+						ESP_LOGI(GPS, "Altitude:\t%f", coord.altitude);
+
+						break;
+					case NMEA_GPRMC:
+						nmea_parse_gprmc(message, &gprmc);
+
+						coord.speed = gprmc.speed;
+						coord.course = gprmc.course;
+						
+						ESP_LOGI(GPS, "Speed\t\t%f", coord.speed);
+						ESP_LOGI(GPS, "Course\t\t%f", coord.course);
+
+						break;
+					}
+				}
+			}
+		
+			if (start >= 0)
+			{
+				memcpy(message, data + start, len - start);
+				message[len - start] = 0;
+			}
+		}
+	}
+		
+	ESP_LOGE(GPS, "GPS TASK ENDED");
+	vTaskDelete(NULL);
 }
 
