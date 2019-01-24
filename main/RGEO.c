@@ -40,7 +40,8 @@
 #include "nvs.h"
 #include "nvs_flash.h"
 //#include "LibGPS/gps.h"
-#include "LibGPS/nmea.h"
+//#include "LibGPS/nmea.h"
+#include "GPS/GPS.h"
 
 
 static const char* GPS = "GPS";
@@ -91,169 +92,6 @@ typedef enum
 
 uint8_t display_buffer[1024];
 
-
-void znmea_parse_gpgga(uint8_t *nmea, gpgga_t *loc)
-{
-	char *p = (char *)nmea;
-
-	p = strchr(p, ',') + 1;  //skip time
-
-	p = strchr(p, ',') + 1;
-	loc->latitude = atof(p);
-
-	p = strchr(p, ',') + 1;
-	switch (p[0]) {
-	case 'N':
-		loc->lat = 'N';
-		break;
-	case 'S':
-		loc->lat = 'S';
-		break;
-	case ',':
-		loc->lat = '\0';
-		break;
-	}
-
-	p = strchr(p, ',') + 1;
-	loc->longitude = atof(p);
-
-	p = strchr(p, ',') + 1;
-	switch (p[0]) {
-	case 'W':
-		loc->lon = 'W';
-		break;
-	case 'E':
-		loc->lon = 'E';
-		break;
-	case ',':
-		loc->lon = '\0';
-		break;
-	}
-
-	p = strchr(p, ',') + 1;
-	loc->quality = (uint8_t)atoi(p);
-
-	p = strchr(p, ',') + 1;
-	loc->satellites = (uint8_t)atoi(p);
-
-	p = strchr(p, ',') + 1;
-
-	p = strchr(p, ',') + 1;
-	loc->altitude = atof(p);
-}
-
-void znmea_parse_gprmc(uint8_t *nmea, gprmc_t *loc)
-{
-	char *p = (char *)nmea;
-
-	p = strchr(p, ',') + 1;  //skip time
-	p = strchr(p, ',') + 1;  //skip status
-
-	p = strchr(p, ',') + 1;
-	loc->latitude = atof(p);
-
-	p = strchr(p, ',') + 1;
-	switch (p[0]) {
-	case 'N':
-		loc->lat = 'N';
-		break;
-	case 'S':
-		loc->lat = 'S';
-		break;
-	case ',':
-		loc->lat = '\0';
-		break;
-	}
-
-	p = strchr(p, ',') + 1;
-	loc->longitude = atof(p);
-
-	p = strchr(p, ',') + 1;
-	switch (p[0]) {
-	case 'W':
-		loc->lon = 'W';
-		break;
-	case 'E':
-		loc->lon = 'E';
-		break;
-	case ',':
-		loc->lon = '\0';
-		break;
-	}
-
-	p = strchr(p, ',') + 1;
-	loc->speed = atof(p);
-
-	p = strchr(p, ',') + 1;
-	loc->course = atof(p);
-}
-
-
-
-double zgps_deg_dec(double deg_point)
-{
-	double ddeg;
-	double sec = modf(deg_point, &ddeg) * 60.0;
-	int deg = (int)(ddeg / 100.0);
-	int min = (int)(deg_point - (deg * 100.0));
-
-	double absdlat = round(deg * 1000000.0);
-	double absmlat = round(min * 1000000.0);
-	double absslat = round(sec * 1000000.0);
-
-	return round(absdlat + (absmlat / 60.0) + (absslat / 3600.0)) / 1000000.0;
-}
-
-// Convert lat e lon to decimals (from deg)
-void zgps_convert_deg_to_dec(double *latitude, char ns, double *longitude, char we)
-{
-	double lat = (ns == 'N') ? *latitude : -1 * (*latitude);
-	double lon = (we == 'E') ? *longitude : -1 * (*longitude);
-
-	*latitude = zgps_deg_dec(lat);
-	*longitude = zgps_deg_dec(lon);
-}
-
-
-
-
-uint8_t znmea_valid_checksum(const uint8_t *message) {
-	uint8_t checksum = (uint8_t)strtol(strchr((const char *)message, '*') + 1, NULL, 16);
-
-	char p;
-	uint8_t sum = 0;
-	++message;
-	while ((p = *message++) != '*') {
-		sum ^= p;
-	}
-
-	if (sum != checksum) {
-		return NMEA_CHECKSUM_ERR;
-	}
-
-	return _EMPTY;
-}
-
-
-
-
-uint8_t znmea_get_message_type(const uint8_t *message)
-{
-	uint8_t checksum = 0;
-	if ((checksum = znmea_valid_checksum(message)) != _EMPTY) {
-		return checksum;
-	}
-
-	if (strstr((const char *)message, NMEA_GPGGA_STR) != NULL) {
-		return NMEA_GPGGA;
-	}
-
-	if (strstr((const char *)message, NMEA_GPRMC_STR) != NULL) {
-		return NMEA_GPRMC;
-	}
-
-	return NMEA_UNKNOWN;
-}
 
 
 
@@ -338,11 +176,11 @@ static void GPSTask()
 					start = -1;
 					ESP_LOGD(GPS, "%s", message);
 
-					switch (znmea_get_message_type((const uint8_t *)message)) {
+					switch (nmea_get_message_type((const uint8_t *)message)) {
 					case NMEA_GPGGA:
-						znmea_parse_gpgga(message, &gpgga);
+						nmea_parse_gpgga(message, &gpgga);
 						
-						zgps_convert_deg_to_dec(&(gpgga.latitude), gpgga.lat, &(gpgga.longitude), gpgga.lon);
+						gps_convert_deg_to_dec(&(gpgga.latitude), gpgga.lat, &(gpgga.longitude), gpgga.lon);
 
 						coord.latitude = gpgga.latitude;
 						coord.longitude = gpgga.longitude;
@@ -354,7 +192,7 @@ static void GPSTask()
 
 						break;
 					case NMEA_GPRMC:
-						znmea_parse_gprmc(message, &gprmc);
+						nmea_parse_gprmc(message, &gprmc);
 
 						coord.speed = gprmc.speed;
 						coord.course = gprmc.course;
@@ -386,33 +224,6 @@ static void GPSTask()
 #define ACK_CHECK_EN                       0x1              /*!< I2C master will check ack from slave*/
 
 
-//static void i2c_write(i2c_port_t i2c_num, uint8_t* data_wr, size_t size, I2CMode Mode)
-//{
-//	i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-//	i2c_master_start(cmd);
-//	i2c_master_write_byte(cmd, (ESP_SLAVE_ADDR << 1) | WRITE_BIT, ACK_CHECK_EN);
-//	i2c_master_write_byte(cmd, (Mode == COMMAND ? 0x00 : 0x40), ACK_CHECK_EN);
-//	uint8_t byteCount = 1;
-//
-//	while (size--)
-//	{
-//		if (byteCount >= 32)
-//		{
-//			i2c_master_stop(cmd);
-//			i2c_master_cmd_begin(i2c_num, cmd, 1000 / portTICK_RATE_MS);
-//			i2c_master_start(cmd);
-//			i2c_master_write_byte(cmd, (ESP_SLAVE_ADDR << 1) | WRITE_BIT, ACK_CHECK_EN);
-//			i2c_master_write_byte(cmd, (Mode == COMMAND ? 0x00 : 0x40), ACK_CHECK_EN);
-//			byteCount = 1;
-//		}
-//		i2c_master_write(cmd, data_wr, size, ACK_CHECK_EN);
-//		i2c_master_stop(cmd);
-//		i2c_master_cmd_begin(i2c_num, cmd, 1000 / portTICK_RATE_MS);
-//	}
-//	
-//	i2c_cmd_link_delete(cmd);
-//}
-
 
 static void i2c_write(i2c_port_t i2c_num, uint8_t* data_wr, size_t size, I2CMode Mode)
 {
@@ -425,28 +236,6 @@ static void i2c_write(i2c_port_t i2c_num, uint8_t* data_wr, size_t size, I2CMode
 	i2c_master_cmd_begin(i2c_num, cmd, 1000 / portTICK_RATE_MS);
 	i2c_cmd_link_delete(cmd);
 }
-
-
-// Issue list of commands to SSD1306, same rules as above re: transactions.
-// This is a private function, not exposed.
-//void Adafruit_SSD1306::ssd1306_commandList(const uint8_t *c, uint8_t n) {
-//		 // I2C
-//	  wire->beginTransmission(i2caddr);
-//		WIRE_WRITE((uint8_t)0x00);  // Co = 0, D/C = 0
-//		uint8_t bytesOut = 1;
-//		while (n--) {
-//			if (bytesOut >= WIRE_MAX) {
-//				wire->endTransmission();
-//				wire->beginTransmission(i2caddr);
-//				WIRE_WRITE((uint8_t)0x00);  // Co = 0, D/C = 0
-//				bytesOut = 1;
-//			}
-//			WIRE_WRITE(pgm_read_byte(c++));
-//			bytesOut++;
-//		}
-//		wire->endTransmission();
-//}
-
 
 
 
@@ -560,17 +349,11 @@ static void LCDTask()
 
 	i2c_write(I2C_NUM_0, dat, i2cIndex, COMMAND);
 	
-	
-	
-	
-	
-	memset(display_buffer, 0X5a, 512);   
+
+	memset(display_buffer, 0X00, 512);   
 
 	
-	
 	i2c_write(I2C_NUM_0, display_buffer, 512, DATA);
-	
-	ESP_LOGW(LCD, "Well that worked at least");
 	
 	ESP_LOGE(LCD, "LCD TASK ENDED");
 	vTaskDelete(NULL);
@@ -585,6 +368,6 @@ void app_main()
 	
 	
 	
-//	xTaskCreate(&GPSTask, "GPS", 2048, NULL, 3, NULL);
+	xTaskCreate(&GPSTask, "GPS", 2048, NULL, 3, NULL);
 	xTaskCreate(&LCDTask, "LCD", 2048, NULL, 8, NULL);	
 }
