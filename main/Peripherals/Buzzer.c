@@ -27,20 +27,12 @@ void BuzzerTask()
 
 	mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_0, &pwm_config);      //Configure PWM0A & PWM0B with above settings
 
-	volatile uint16_t freq = 750;
-	volatile float duty = 50.0;
+//	mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, duty);
 
-	mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, duty);
-
-	//	while(1) {
-		
-	//		mcpwm_set_frequency(MCPWM_UNIT_0, MCPWM_TIMER_0, C4);
-		
-	//	}
 	
 
 
-		ESP_LOGE(BUZZER, "BUZZER TASK ENDED");
+	ESP_LOGE(BUZZER, "BUZZER TASK ENDED");
 	vTaskDelete(NULL);
 }
 
