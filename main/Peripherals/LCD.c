@@ -105,20 +105,20 @@ void DisplayRefresh()
 
 void SetPixel(uint8_t x, uint8_t y)
 {
-	uint8_t xMajor = x / 8;
-	uint8_t xMinor = x % 8;
+	uint8_t yMajor = y / 8;
+	uint8_t yMinor = y % 8;
 	
-	DisplayBuffer[xMajor * SSD1306_LCDWIDTH + y] |= 1 << xMinor;
+	DisplayBuffer[yMajor * SSD1306_LCDWIDTH + x] |= 1 << yMinor;
 	
 }
 
 
 void TogglePixel(uint8_t x, uint8_t y)
 {
-	uint8_t xMajor = x / 8;
-	uint8_t xMinor = x % 8;
+	uint8_t yMajor = y / 8;
+	uint8_t yMinor = y % 8;
 	
-	DisplayBuffer[xMajor * SSD1306_LCDWIDTH + y] ^= 1 << xMinor;
+	DisplayBuffer[yMajor * SSD1306_LCDWIDTH + x] ^= 1 << yMinor;
 	
 }
 
@@ -140,31 +140,35 @@ void DisplayWriteText(uint8_t* Text)
 	uint16_t datOff = 0;
 	GFXfont f = FreeMono12pt7b;
 
+	uint8_t len = strlen((const char *)Text);
 	
-	
-	uint8_t offset = *Text -(uint8_t)' ';
-	
-	GFXglyph g = f.glyph[offset];
-	
-	uint16_t numBits = g.width * g.height;
-	
-	for (uint16_t i = 0; i < numBits; i++)
+	for (uint8_t index = 0; index < len; index++)
 	{
-		xOff = i % g.width;
-		yOff = i / g.width;
-		
-		datOff = 8*((xOff * g.width + yOff) / 8) + (7 - (xOff * g.width + yOff) % 8);
-		
-		if (GetBit(datOff, f.bitmap + g.bitmapOffset))
+		uint8_t offset = *Text++ - (uint8_t)' ';
+	
+		GFXglyph g = f.glyph[offset];
+	
+		uint16_t numBits = g.width * g.height;
+	
+		for (uint16_t i = 0; i < numBits; i++)
 		{
-			SetPixel( x + xOff, y + yOff);
+			xOff = i % g.width;
+			yOff = i / g.width;
+		
+			datOff = 8 * (i / 8) + (7 - i % 8);
+		
+			if (GetBit(datOff, f.bitmap + g.bitmapOffset))
+			{
+				SetPixel(x + xOff, y + yOff);
+			}
 		}
-	}
-
+		
+		DisplayRefresh();
+		x += g.xAdvance;
+	}	
 	
+//	DisplayRefresh();
 	
-	
-	DisplayRefresh();
 }
 
 
@@ -180,7 +184,7 @@ void LCDTask()
 	LCD_Init();
 
 	DisplayClear();
-	DisplayRefresh();
+//	DisplayRefresh();
 
 	
 	uint8_t text[] = "MyText";
@@ -192,10 +196,10 @@ void LCDTask()
 	
 //	for (uint8_t i = 0; i < 32; i++)
 //	{
-//		SetPixel(i, i);
+//		SetPixel(3, i);
 //	}
 	
-	DisplayRefresh();
+	I2C_Write(I2C_NUM_0, DisplayBuffer, DISPLAY_BUFFER_SIZE, DATA);
 
 
 	ESP_LOGE(LCD, "LCD TASK ENDED");
