@@ -161,9 +161,7 @@ void DisplayWriteText(uint8_t* Text)
 	
 		GFXglyph g = f.glyph[offset];
 	
-		uint16_t numBits = g.width * g.height;
-	
-		for (uint16_t i = 0; i < numBits; i++)
+		for (uint16_t i = 0; i < g.width * g.height; i++)
 		{
 			xOff = i % g.width + g.xOffset;
 			yOff = i / g.width + g.yOffset + f.yAdvance - 10;
@@ -176,25 +174,9 @@ void DisplayWriteText(uint8_t* Text)
 			}
 		}
 		
-//		DisplayRefresh();
 		CursorX += g.xAdvance;
-	}	
-	
-//	DisplayRefresh();
-	
+	}
 }
-
-
-//  index   w   h xAdv xo  yo
-//{   641, 13, 14, 14, 1, -13 },	// 0x4D 'M'
-//{  1396, 12, 14, 14, 1, -9 },		// 0x79 'y'
-//{  1313, 11, 14, 14, 1, -13 },    // 0x74 't'
-//{  1057, 10, 10, 14, 2, -9 },		// 0x65 'e'
-//{  1381, 12, 10, 14, 1, -9 },		// 0x78 'x'
-//{  1313, 11, 14, 14, 1, -13 },    // 0x74 't'
-
-
-
 
 
 void LCDTask()
@@ -207,7 +189,6 @@ void LCDTask()
 	LCD_Init();
 
 	DisplayClear();
-//	DisplayRefresh();
 
 	
 	uint8_t text1[] = "Distance";
@@ -219,15 +200,7 @@ void LCDTask()
 	SetCursor(0, 16);
 	DisplayWriteText(text2);
 
-//	memset(DisplayBuffer, 0x50, DISPLAY_BUFFER_SIZE);   
 
-	
-//	for (uint8_t i = 0; i < 32; i++)
-//	{
-//		SetPixel(3, i);
-//	}
-	
-//	I2C_Write(I2C_NUM_0, DisplayBuffer, DISPLAY_BUFFER_SIZE, DATA);
 	DisplayRefresh();
 
 
