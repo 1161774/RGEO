@@ -131,14 +131,27 @@ bool GetBit(uint16_t Bit, uint8_t * buf)
 	return *(buf + bitMajor) & (1 << bitMinor);
 }
 
+void SetCursor(int8_t _x, int8_t _y)
+{
+	if (_x >= 0)
+	{
+		CursorX = _x;
+	}
+
+	if (_y >= 0)
+	{
+		CursorY = _y;
+	}
+}
+
 
 void DisplayWriteText(uint8_t* Text)
 {
 	
-	uint8_t x = 0, xOff = 0;
-	uint8_t y = 0, yOff = 0;
+	uint8_t xOff = 0;
+	uint8_t yOff = 0;
 	uint16_t datOff = 0;
-	GFXfont f = FreeMono12pt7b;
+	GFXfont f = MyFont;
 
 	uint8_t len = strlen((const char *)Text);
 	
@@ -152,24 +165,34 @@ void DisplayWriteText(uint8_t* Text)
 	
 		for (uint16_t i = 0; i < numBits; i++)
 		{
-			xOff = i % g.width;
-			yOff = i / g.width;
+			xOff = i % g.width + g.xOffset;
+			yOff = i / g.width + g.yOffset + f.yAdvance - 10;
 		
 			datOff = 8 * (i / 8) + (7 - i % 8);
 		
 			if (GetBit(datOff, f.bitmap + g.bitmapOffset))
 			{
-				SetPixel(x + xOff, y + yOff);
+				SetPixel(CursorX + xOff, CursorY + yOff);
 			}
 		}
 		
-		DisplayRefresh();
-		x += g.xAdvance;
+//		DisplayRefresh();
+		CursorX += g.xAdvance;
 	}	
 	
 //	DisplayRefresh();
 	
 }
+
+
+//  index   w   h xAdv xo  yo
+//{   641, 13, 14, 14, 1, -13 },	// 0x4D 'M'
+//{  1396, 12, 14, 14, 1, -9 },		// 0x79 'y'
+//{  1313, 11, 14, 14, 1, -13 },    // 0x74 't'
+//{  1057, 10, 10, 14, 2, -9 },		// 0x65 'e'
+//{  1381, 12, 10, 14, 1, -9 },		// 0x78 'x'
+//{  1313, 11, 14, 14, 1, -13 },    // 0x74 't'
+
 
 
 
@@ -187,9 +210,14 @@ void LCDTask()
 //	DisplayRefresh();
 
 	
-	uint8_t text[] = "MyText";
+	uint8_t text1[] = "Distance";
+	uint8_t text2[] = "12,345.67m";
 	
-	DisplayWriteText(text);
+	SetCursor(0, 0);
+	DisplayWriteText(text1);
+	
+	SetCursor(0, 16);
+	DisplayWriteText(text2);
 
 //	memset(DisplayBuffer, 0x50, DISPLAY_BUFFER_SIZE);   
 
@@ -199,7 +227,8 @@ void LCDTask()
 //		SetPixel(3, i);
 //	}
 	
-	I2C_Write(I2C_NUM_0, DisplayBuffer, DISPLAY_BUFFER_SIZE, DATA);
+//	I2C_Write(I2C_NUM_0, DisplayBuffer, DISPLAY_BUFFER_SIZE, DATA);
+	DisplayRefresh();
 
 
 	ESP_LOGE(LCD, "LCD TASK ENDED");

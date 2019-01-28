@@ -28,7 +28,7 @@ typedef struct
 
 extern const uint8_t FreeMono12pt7bBitmaps[];
 extern const GFXglyph FreeMono12pt7bGlyphs[];
-extern const GFXfont FreeMono12pt7b;
+extern const GFXfont MyFont;
 
 
 
@@ -74,6 +74,8 @@ extern const GFXfont FreeMono12pt7b;
 extern const char* LCD;
 
 
+extern uint8_t CursorX;
+extern uint8_t CursorY;
 
 typedef enum
 {
