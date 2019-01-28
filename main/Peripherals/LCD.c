@@ -43,7 +43,6 @@ void I2C_Init()
 		0,
 		0,
 		0);
-	
 }
 
 
@@ -51,18 +50,15 @@ void I2C_Init()
 
 void LCD_Init()
 {
-
 	uint16_t i2cIndex;
 	uint8_t *dat = malloc(100);
 
-	
-	
 	i2cIndex = 0;
 	*(dat + i2cIndex++) = SSD1306_DISPLAYOFF;       			// 0xAE
 	*(dat + i2cIndex++) = SSD1306_SETDISPLAYCLOCKDIV;      	// 0xD5
 	*(dat + i2cIndex++) = 0x80;      						// the suggested ratio 0x80
 	*(dat + i2cIndex++) = SSD1306_SETMULTIPLEX;              // 0xA8
-	*(dat + i2cIndex++) = HEIGHT - 1;
+	*(dat + i2cIndex++) = SSD1306_LCDHEIGHT - 1;
 	*(dat + i2cIndex++) = SSD1306_SETDISPLAYOFFSET;       	// 0xD3
 	*(dat + i2cIndex++) = 0x0;      							// no offset
 	*(dat + i2cIndex++) = SSD1306_SETSTARTLINE | 0x0;      	// line #0 0x40
@@ -92,28 +88,118 @@ void LCD_Init()
 	*(dat + i2cIndex++) = 0x7F; 							
 
 	I2C_Write(I2C_NUM_0, dat, i2cIndex, COMMAND);
+}
+
+
+void DisplayClear()
+{
+	memset(DisplayBuffer, 0x00, DISPLAY_BUFFER_SIZE);   
+}
+
+void DisplayRefresh()
+{
+	I2C_Write(I2C_NUM_0, DisplayBuffer, DISPLAY_BUFFER_SIZE, DATA);
+}
+
+
+
+void SetPixel(uint8_t x, uint8_t y)
+{
+	uint8_t xMajor = x / 8;
+	uint8_t xMinor = x % 8;
+	
+	DisplayBuffer[xMajor * SSD1306_LCDWIDTH + y] |= 1 << xMinor;
 	
 }
 
+
+void TogglePixel(uint8_t x, uint8_t y)
+{
+	uint8_t xMajor = x / 8;
+	uint8_t xMinor = x % 8;
+	
+	DisplayBuffer[xMajor * SSD1306_LCDWIDTH + y] ^= 1 << xMinor;
+	
+}
+
+bool GetBit(uint16_t Bit, uint8_t * buf)
+{
+	
+	uint16_t bitMajor = Bit / 8;
+	uint16_t bitMinor = Bit % 8;
+	
+	return *(buf + bitMajor) & (1 << bitMinor);
+}
+
+
+void DisplayWriteText(uint8_t* Text)
+{
+	
+	uint8_t x = 0, xOff = 0;
+	uint8_t y = 0, yOff = 0;
+	uint16_t datOff = 0;
+	GFXfont f = FreeMono12pt7b;
+
+	
+	
+	uint8_t offset = *Text -(uint8_t)' ';
+	
+	GFXglyph g = f.glyph[offset];
+	
+	uint16_t numBits = g.width * g.height;
+	
+	for (uint16_t i = 0; i < numBits; i++)
+	{
+		xOff = i % g.width;
+		yOff = i / g.width;
+		
+		datOff = 8*((xOff * g.width + yOff) / 8) + (7 - (xOff * g.width + yOff) % 8);
+		
+		if (GetBit(datOff, f.bitmap + g.bitmapOffset))
+		{
+			SetPixel( x + xOff, y + yOff);
+		}
+	}
+
+	
+	
+	
+	DisplayRefresh();
+}
 
 
 
 
 void LCDTask()
 {
-	ESP_LOGI(LCD, "Start LCD");
+	ESP_LOGI(LCD, "Start I2C");
 	I2C_Init();	
 	
 
 	ESP_LOGI(LCD, "Init LCD");
 	LCD_Init();
-	
 
-	memset(display_buffer, 0xa5, 512);   
+	DisplayClear();
+	DisplayRefresh();
 
 	
-	I2C_Write(I2C_NUM_0, display_buffer, 512, DATA);
+	uint8_t text[] = "MyText";
 	
+	DisplayWriteText(text);
+
+//	memset(DisplayBuffer, 0x50, DISPLAY_BUFFER_SIZE);   
+
+	
+//	for (uint8_t i = 0; i < 32; i++)
+//	{
+//		SetPixel(i, i);
+//	}
+	
+	DisplayRefresh();
+
+
 	ESP_LOGE(LCD, "LCD TASK ENDED");
 	vTaskDelete(NULL);
 }
+
+

@@ -2,6 +2,36 @@
 
 #include <inttypes.h>
 
+typedef struct
+{
+	uint16_t bitmapOffset;         ///< Pointer into GFXfont->bitmap
+	uint8_t  width;                ///< Bitmap dimensions in pixels
+	uint8_t  height;               ///< Bitmap dimensions in pixels
+	uint8_t  xAdvance;             ///< Distance to advance cursor (x axis)
+	int8_t   xOffset;              ///< X dist from cursor pos to UL corner
+	int8_t   yOffset;              ///< Y dist from cursor pos to UL corner
+}	GFXglyph;
+
+
+
+
+// Data stored for FONT AS A WHOLE
+typedef struct 
+{ 
+	uint8_t  *bitmap;           ///< Glyph bitmaps, concatenated
+	GFXglyph *glyph;           ///< Glyph array
+	uint8_t   first;           ///< ASCII extents (first char)
+	uint8_t   last;            ///< ASCII extents (last char)
+	uint8_t   yAdvance;        ///< Newline distance (y axis)
+}	GFXfont;
+
+
+extern const uint8_t FreeMono12pt7bBitmaps[];
+extern const GFXglyph FreeMono12pt7bGlyphs[];
+extern const GFXfont FreeMono12pt7b;
+
+
+
 #define	SSD1306_DISPLAYOFF			0xAE
 #define SSD1306_SETDISPLAYCLOCKDIV	0xD5
 #define SSD1306_SETMULTIPLEX		0xA8
@@ -28,7 +58,6 @@
 #define	SSD1306_PAGEADDR			0x22
 #define	SSD1306_LCDWIDTH			128
 #define	SSD1306_LCDHEIGHT			32
-#define HEIGHT						32
 
 
 
@@ -38,6 +67,9 @@
 #define READ_BIT                           I2C_MASTER_READ  /*!< I2C master read */
 #define ACK_CHECK_EN                       0x1              /*!< I2C master will check ack from slave*/
 
+
+
+#define DISPLAY_BUFFER_SIZE			512
 
 extern const char* LCD;
 
@@ -52,7 +84,8 @@ typedef enum
 
 
 
-uint8_t display_buffer[1024];
+
+static uint8_t DisplayBuffer[DISPLAY_BUFFER_SIZE];
 
 
 void I2C_Write();
