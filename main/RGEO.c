@@ -46,12 +46,14 @@ extern void LCDTask();
 extern void BuzzerTask();
 extern void PotTask();
 extern void ButtonTask();
+extern void LockTask();
 
 const char* GPS = "GPS";
 const char* LCD = "LCD";
 const char* BUTTON = "Button";
 const char* BUZZER = "Buzzer";
 const char* POTS = "Pots";
+const char* LOCK = "Lock";
 
 
 
@@ -279,5 +281,6 @@ void app_main()
 //	xTaskCreate(&LCDTask,		"LCD",		2048,	NULL,	8,	NULL);	
 //	xTaskCreate(&PotTask,		"Pots",		2048,	NULL,	8,	NULL);	
 	xTaskCreate(&ButtonTask,	"Button",	2048,	NULL,	8,	NULL);
+	xTaskCreate(&LockTask,		"Lock",		2048,	NULL,	8,	NULL);
 
 }
