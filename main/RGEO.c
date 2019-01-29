@@ -59,7 +59,7 @@ const char* POTS	= "Pots";
 const char* LOCK	= "Lock";
 
 
-
+extern loc_t Location;
 
 const uint8_t FreeSans9pt7bBitmaps[] = {
   0xFF, 0xFF, 0xF8, 0xC0, 0xDE, 0xF7, 0x20, 0x09, 0x86, 0x41, 0x91, 0xFF,
@@ -309,7 +309,7 @@ void app_main()
 //Inits shouldn't be in tasks...
 	
 //	xTaskCreate(&BuzzerTask,	"Buzzer",	2048,	NULL,	2,	NULL);
-//	xTaskCreate(&GPSTask,		"GPS",		2048,	NULL,	3,	NULL);
+	xTaskCreate(&GPSTask,		"GPS",		2048,	NULL,	3,	NULL);
 //	xTaskCreate(&LCDTask,		"LCD",		2048,	NULL,	8,	NULL);	
 //	xTaskCreate(&PotTask,		"Pots",		2048,	NULL,	8,	NULL);	
 	xTaskCreate(&ButtonInitTask,	"Button",	2048,	NULL,	8,	NULL);

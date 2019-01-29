@@ -205,6 +205,28 @@ void UART_Init()
 }
 
 
+#define R 6371
+#define TO_RAD (3.1415926536 / 180)
+
+
+double GetDistance(loc_t Loc, loc_t Dest)
+{
+
+	double dx, dy, dz;
+	Loc.longitude -= Dest.longitude;
+	Loc.longitude *= TO_RAD;
+	Loc.latitude *= TO_RAD;
+	Dest.latitude *= TO_RAD;
+ 
+	dz = sin(Loc.latitude) - sin(Dest.latitude);
+	dx = cos(Loc.longitude) * cos(Loc.latitude) - cos(Dest.latitude);
+	dy = sin(Loc.longitude) * cos(Loc.latitude);
+	
+	return asin(sqrt(dx * dx + dy * dy + dz * dz) / 2) * 2 * R * 1000;
+}
+
+
+
 
 void GPSTask()
 {
@@ -215,14 +237,24 @@ void GPSTask()
 	uint8_t *data = (uint8_t *) malloc(BUF_SIZE);
 	uint8_t *message = (uint8_t *) malloc(BUF_SIZE);
 
-	loc_t coord;
 	gpgga_t gpgga;
 	gprmc_t gprmc;
 	
 	int16_t i, start = -1, msgLen;
 
 	ESP_LOGI(GPS, "UART Configured");
-
+	
+//	volatile loc_t Start, End;
+//	
+//	Start.latitude  = -34.990571;
+//	Start.longitude = 138.603894;
+//	
+//	End.latitude  =  25.370609;
+//	End.longitude =  55.391470;
+//	
+//	volatile double res = GetDistance(Start, End);
+//	
+//	res = res;
 	
 	while (1) {
 
@@ -264,23 +296,23 @@ void GPSTask()
 						
 						gps_convert_deg_to_dec(&(gpgga.latitude), gpgga.lat, &(gpgga.longitude), gpgga.lon);
 
-						coord.latitude = gpgga.latitude;
-						coord.longitude = gpgga.longitude;
-						coord.altitude = gpgga.altitude;
+						Location.latitude = gpgga.latitude;
+						Location.longitude = gpgga.longitude;
+						Location.altitude = gpgga.altitude;
 						
-						ESP_LOGI(GPS, "Latitude:\t%f", coord.latitude);
-						ESP_LOGI(GPS, "Longitude:\t%f", coord.longitude);
-						ESP_LOGI(GPS, "Altitude:\t%f", coord.altitude);
+						ESP_LOGI(GPS, "Latitude:\t%f", Location.latitude);
+						ESP_LOGI(GPS, "Longitude:\t%f", Location.longitude);
+						ESP_LOGI(GPS, "Altitude:\t%f", Location.altitude);
 
 						break;
 					case NMEA_GPRMC:
 						nmea_parse_gprmc(message, &gprmc);
 
-						coord.speed = gprmc.speed;
-						coord.course = gprmc.course;
+						Location.speed = gprmc.speed;
+						Location.course = gprmc.course;
 						
-						ESP_LOGI(GPS, "Speed\t\t%f", coord.speed);
-						ESP_LOGI(GPS, "Course\t\t%f", coord.course);
+						ESP_LOGI(GPS, "Speed\t\t%f", Location.speed);
+						ESP_LOGI(GPS, "Course\t\t%f", Location.course);
 
 						break;
 					}
