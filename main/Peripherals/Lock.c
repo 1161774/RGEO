@@ -1,10 +1,73 @@
 #include "Peripherals/Lock.h"
 
 
+
+void LockBoxTask(void *arg)
+{
+	volatile lockCmd c = (lockCmd)arg;
+	
+	switch (c)
+	{		
+	case BOX_LOCK:
+		ESP_LOGI(LOCK, "Received lock command");	
+		break;
+		
+	case BOX_UNLOCK:
+		ESP_LOGI(LOCK, "Received unlock command");	
+		break;
+	
+	case BOX_IDLE:
+	default:
+		ESP_LOGE(LOCK, "Unknown Command %d", (int8_t)c);	
+	}
+	
+	
+	if (c == BOX_UNLOCK && BoxState == BOX_LOCKED)
+	{
+		ESP_LOGD(LOCK, "Unlocking...");
+		BoxState = BOX_UNLOCKING;
+
+		gpio_set_level(GPIO_LOCK_LOCK, 0);
+		gpio_set_level(GPIO_LOCK_UNLOCK, 1);
+
+		vTaskDelay(BOX_UNLOCK_TIME_MS / portTICK_RATE_MS);
+		
+		gpio_set_level(GPIO_LOCK_LOCK, 0);
+		gpio_set_level(GPIO_LOCK_UNLOCK, 0);
+		
+		BoxState = BOX_UNLOCKED;
+		ESP_LOGD(LOCK, "Unlocked");
+	}
+	else if (c ==  BOX_LOCK && BoxState == BOX_UNLOCKED)
+	{
+		ESP_LOGD(LOCK, "Locking...");
+		BoxState = BOX_LOCKING;
+
+		gpio_set_level(GPIO_LOCK_LOCK, 1);
+		gpio_set_level(GPIO_LOCK_UNLOCK, 0);
+
+		vTaskDelay(BOX_LOCK_TIME_MS / portTICK_RATE_MS);
+		
+		gpio_set_level(GPIO_LOCK_LOCK, 0);
+		gpio_set_level(GPIO_LOCK_UNLOCK, 0);
+		
+		BoxState = BOX_LOCKED;
+		ESP_LOGD(LOCK, "Locked");
+	}
+	else
+	{
+		ESP_LOGE(LOCK, "Unable to action command");
+	}
+
+	vTaskDelete(NULL);
+}
+
+
 void LockTask()
 {
+	ESP_LOGD(LOCK, "Initialising Lock");
+	
 	gpio_config_t io_conf;
-
 	
 	//disable interrupt
 	io_conf.intr_type = GPIO_PIN_INTR_DISABLE;
@@ -19,15 +82,10 @@ void LockTask()
 	//configure GPIO with the given settings
 	gpio_config(&io_conf);
 	
-	uint8_t cnt = 0;
-	while (1) 
-	{
-		ESP_LOGI(LOCK, "cnt: %d", cnt++);
-		vTaskDelay(1000 / portTICK_RATE_MS);
-		gpio_set_level(GPIO_LOCK_SLEEP, cnt % 2);
-		gpio_set_level(GPIO_LOCK_LOCK, cnt % 2);
-		gpio_set_level(GPIO_LOCK_UNLOCK, cnt % 2);
-	}
 
+	BoxState = BOX_UNLOCKED;
+	
+	ESP_LOGD(LOCK, "Lock Initialised");
+	vTaskDelete(NULL);
 
 }

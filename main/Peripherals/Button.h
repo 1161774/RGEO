@@ -14,9 +14,13 @@
 #include "driver/gpio.h"
 
 
+xQueueHandle gpio_evt_queue = NULL;
 
 
 extern const char* BUTTON;
 
+extern void ButtonTask(void* arg);
 
-void ButtonTask();
+
+
+void ButtonInitTask();

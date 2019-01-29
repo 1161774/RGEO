@@ -40,20 +40,23 @@
 #include "Peripherals/LCD.h"
 #include "Peripherals/Buzzer.h"
 #include "Peripherals/Pots.h"
+#include "Peripherals/Lock.h"
 
 extern void GPSTask();
 extern void LCDTask();
 extern void BuzzerTask();
 extern void PotTask();
-extern void ButtonTask();
+extern void ButtonInitTask();
 extern void LockTask();
+extern void LockBoxTask(void *arg);
 
-const char* GPS = "GPS";
-const char* LCD = "LCD";
-const char* BUTTON = "Button";
-const char* BUZZER = "Buzzer";
-const char* POTS = "Pots";
-const char* LOCK = "Lock";
+const char* RGEO	= "RGEO";
+const char* GPS		= "GPS";
+const char* LCD		= "LCD";
+const char* BUTTON	= "Button";
+const char* BUZZER	= "Buzzer";
+const char* POTS	= "Pots";
+const char* LOCK	= "Lock";
 
 
 
@@ -269,18 +272,48 @@ const GFXfont MyFont = {
 	22
 };
 
+extern xQueueHandle gpio_evt_queue;
+
+void ButtonTask(void* arg)
+{
+	uint32_t io_num;
+
+	while (1) {
+		if (xQueueReceive(gpio_evt_queue, &io_num, portMAX_DELAY)) {
+			ESP_LOGD(BUTTON, "GPIO[%d] intr, val: %d\n", io_num, gpio_get_level(io_num));
+			
+			if(gpio_get_level(io_num))
+			{
+				xTaskCreate(&LockBoxTask, "BoxLock", 2048, (void *)BOX_LOCK, 10, NULL);
+			}
+			else
+			{
+				xTaskCreate(&LockBoxTask, "BoxLock", 2048, (void *)BOX_UNLOCK, 10, NULL);
+			}
+		}
+	}
+}
+
+
 
 
 void app_main()
 {
+	
+	ESP_LOGI(RGEO, "Reverse Geocache");
+	ESP_LOGI(RGEO, "Compiled %s %s", __DATE__, __TIME__);
 
 	esp_log_level_set(GPS, ESP_LOG_DEBUG);
+	
+	
+//Inits shouldn't be in tasks...
 	
 //	xTaskCreate(&BuzzerTask,	"Buzzer",	2048,	NULL,	2,	NULL);
 //	xTaskCreate(&GPSTask,		"GPS",		2048,	NULL,	3,	NULL);
 //	xTaskCreate(&LCDTask,		"LCD",		2048,	NULL,	8,	NULL);	
 //	xTaskCreate(&PotTask,		"Pots",		2048,	NULL,	8,	NULL);	
-	xTaskCreate(&ButtonTask,	"Button",	2048,	NULL,	8,	NULL);
+	xTaskCreate(&ButtonInitTask,	"Button",	2048,	NULL,	8,	NULL);
 	xTaskCreate(&LockTask,		"Lock",		2048,	NULL,	8,	NULL);
+
 
 }
