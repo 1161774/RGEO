@@ -60,7 +60,17 @@ const char* POTS	= "Pots";
 const char* LOCK	= "Lock";
 
 
+/**************************/
+/*                        */
+/*   Location constants   */
+/*                        */
+/**************************/
 loc_t Destination;
+float UnlockDistance = 0.03; //km
+
+
+
+
 
 lockState BoxState;
 
@@ -297,7 +307,7 @@ void ButtonTask(void* arg)
 		if (xQueueReceive(gpio_evt_queue, &io_num, portMAX_DELAY)) {
 			ESP_LOGD(BUTTON, "GPIO[%d] intr, val: %d\n", io_num, gpio_get_level(io_num));
 			
-			if(gpio_get_level(io_num))
+			if (gpio_get_level(io_num) && BoxState == BOX_UNLOCKED)
 			{
 				xTaskCreate(&LockBoxTask, "BoxLock", 2048, (void *)BOX_LOCK, 10, NULL);
 			}
@@ -327,12 +337,45 @@ void UpdateLCDTask()
 
 		
 		sprintf((char *)text1, "Distance");
-		sprintf((char *)text2, "%d", i++);
-		//		sprintf((char *)text2, "%5.3fkm", d);
+//		sprintf((char *)text2, "%d", i++);
+		sprintf((char *)text2, "%5.3f km", d);
 
 		vTaskDelay(101 / portTICK_RATE_MS);
 	}
 }
+
+
+void EvaluateDistanceTask()
+{
+	double d;
+	while (1)
+	{
+		
+		xSemaphoreTake(Location_mux, portMAX_DELAY);
+
+		d = GetDistance(Location, Destination);
+		
+		xSemaphoreGive(Location_mux);
+		
+
+		if (d < UnlockDistance && BoxState == BOX_LOCKED)
+		{
+			xTaskCreate(&LockBoxTask, "BoxLock", 2048, (void *)BOX_UNLOCK, 10, NULL);
+			
+			ESP_LOGI(RGEO, "Destination Reached - Unlocking box...");
+		}
+		if (d > 2 * UnlockDistance && BoxState == BOX_UNLOCKED)
+		{
+			xTaskCreate(&LockBoxTask, "BoxLock", 2048, (void *)BOX_LOCK, 10, NULL);
+			
+			ESP_LOGI(RGEO, "Too far gone - locking box...");
+		}
+		
+		vTaskDelay(1000 / portTICK_RATE_MS);
+	}
+	vTaskDelete(NULL);
+}
+
 
 
 void app_main()
@@ -345,19 +388,26 @@ void app_main()
 	esp_log_level_set(GPS, ESP_LOG_DEBUG);
 
 	//Exact opposite side of the world from where I live
-	Destination.latitude = 35.000000;
-	Destination.longitude = -40.000000;
-		
+//	Destination.latitude = 35.000000;
+//	Destination.longitude = -40.000000;
+	
+	Destination.latitude  = -34.990384;
+	Destination.longitude = 138.602991;
+	
 	ButtonInit();
 	BuzzerInit();
 	LockInit();
 	GPSInit();
 	LCDInit();
 
-	BoxState = BOX_LOCKED;
+	BoxState = BOX_UNLOCKED;
+	xTaskCreate(&LockBoxTask, "BoxLock", 2048, (void *)BOX_LOCK, 10, NULL);
 	
 	xTaskCreate(&GPSTask,		"GPS",		2048,	NULL,	5,	NULL);
 	xTaskCreate(&LCDTask,		"LCD",		2048,	NULL,	3,	NULL);	
+	
+	
+	xTaskCreate(&EvaluateDistanceTask, "Distance", 2048, NULL, 9, NULL);
 
 	xTaskCreate(&UpdateLCDTask, "UpdateLCD", 2048, NULL, 7, NULL);
 }

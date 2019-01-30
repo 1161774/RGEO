@@ -4,7 +4,7 @@
 
 void LockBoxTask(void *arg)
 {
-	volatile lockCmd c = (lockCmd)arg;
+	lockCmd c = (lockCmd)arg;
 	
 	switch (c)
 	{		
