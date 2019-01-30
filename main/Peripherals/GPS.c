@@ -107,8 +107,6 @@ void nmea_parse_gprmc(uint8_t *nmea, gprmc_t *loc)
 	loc->course = atof(p);
 }
 
-
-
 double gps_deg_dec(double deg_point)
 {
 	double ddeg;
@@ -123,7 +121,6 @@ double gps_deg_dec(double deg_point)
 	return round(absdlat + (absmlat / 60.0) + (absslat / 3600.0)) / 1000000.0;
 }
 
-// Convert lat e lon to decimals (from deg)
 void gps_convert_deg_to_dec(double *latitude, char ns, double *longitude, char we)
 {
 	double lat = (ns == 'N') ? *latitude : -1 * (*latitude);
@@ -132,9 +129,6 @@ void gps_convert_deg_to_dec(double *latitude, char ns, double *longitude, char w
 	*latitude = gps_deg_dec(lat);
 	*longitude = gps_deg_dec(lon);
 }
-
-
-
 
 uint8_t nmea_valid_checksum(const uint8_t *message) {
 	uint8_t checksum = (uint8_t)strtol(strchr((const char *)message, '*') + 1, NULL, 16);
@@ -152,9 +146,6 @@ uint8_t nmea_valid_checksum(const uint8_t *message) {
 
 	return _EMPTY;
 }
-
-
-
 
 uint8_t nmea_get_message_type(const uint8_t *message)
 {
@@ -174,14 +165,8 @@ uint8_t nmea_get_message_type(const uint8_t *message)
 	return NMEA_UNKNOWN;
 }
 
-
-
-void UART_Init()
+void GPSInit()
 {
-	/* Configure parameters of an UART driver,
-
-	 * communication pins and install the driver */
-
 	uart_config_t uart_config = {
 
 		.baud_rate = 9600,
@@ -204,14 +189,8 @@ void UART_Init()
 
 }
 
-
-#define R 6371
-#define TO_RAD (3.1415926536 / 180)
-
-
 double GetDistance(loc_t Loc, loc_t Dest)
 {
-
 	double dx, dy, dz;
 	Loc.longitude -= Dest.longitude;
 	Loc.longitude *= TO_RAD;
@@ -222,16 +201,12 @@ double GetDistance(loc_t Loc, loc_t Dest)
 	dx = cos(Loc.longitude) * cos(Loc.latitude) - cos(Dest.latitude);
 	dy = sin(Loc.longitude) * cos(Loc.latitude);
 	
-	return asin(sqrt(dx * dx + dy * dy + dz * dz) / 2) * 2 * R * 1000;
+	return asin(sqrt(dx * dx + dy * dy + dz * dz) / 2) * 2 * R;
 }
-
-
-
 
 void GPSTask()
 {
 	ESP_LOGI(GPS, "Start UART");
-	UART_Init();
 
 	// Configure buffers for the incoming data
 	uint8_t *data = (uint8_t *) malloc(BUF_SIZE);
@@ -243,18 +218,7 @@ void GPSTask()
 	int16_t i, start = -1, msgLen;
 
 	ESP_LOGI(GPS, "UART Configured");
-	
-//	volatile loc_t Start, End;
-//	
-//	Start.latitude  = -34.990571;
-//	Start.longitude = 138.603894;
-//	
-//	End.latitude  =  25.370609;
-//	End.longitude =  55.391470;
-//	
-//	volatile double res = GetDistance(Start, End);
-//	
-//	res = res;
+
 	
 	while (1) {
 

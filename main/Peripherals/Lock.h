@@ -40,4 +40,4 @@ typedef enum
 lockState BoxState;
 
 void LockBoxTask(void *arg);
-void LockTask();
+void LockInit();

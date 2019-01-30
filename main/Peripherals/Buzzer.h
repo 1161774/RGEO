@@ -172,4 +172,4 @@ extern const char* BUZZER;
 
 
 
-void BuzzerTask();
+void BuzzerInit();

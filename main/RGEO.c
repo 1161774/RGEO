@@ -41,6 +41,7 @@
 #include "Peripherals/Buzzer.h"
 #include "Peripherals/Pots.h"
 #include "Peripherals/Lock.h"
+#include "Peripherals/Button.h"
 
 extern void GPSTask();
 extern void LCDTask();
@@ -57,6 +58,9 @@ const char* BUTTON	= "Button";
 const char* BUZZER	= "Buzzer";
 const char* POTS	= "Pots";
 const char* LOCK	= "Lock";
+
+
+loc_t Destination;
 
 
 extern loc_t Location;
@@ -263,6 +267,11 @@ uint8_t CursorX = 0;
 uint8_t CursorY = 0;
 
 
+bool _updateDisplay = true;
+uint8_t text1[20];
+uint8_t text2[20];
+
+
 
 const GFXfont MyFont = {
 	(uint8_t  *)FreeSans9pt7bBitmaps,
@@ -271,6 +280,7 @@ const GFXfont MyFont = {
 	0x7E,
 	22
 };
+
 
 extern xQueueHandle gpio_evt_queue;
 
@@ -295,25 +305,41 @@ void ButtonTask(void* arg)
 }
 
 
+void UpdateLCDTask()
+{
+	while (1)
+	{
+		_updateDisplay = true;
+		
+		double d = GetDistance(Location, Destination);
+
+		sprintf((char *)text1, "Distance");
+		sprintf((char *)text2, "%5.3fkm", d);
+
+		vTaskDelay(1000 / portTICK_RATE_MS);
+	}
+}
 
 
 void app_main()
 {
-	
 	ESP_LOGI(RGEO, "Reverse Geocache");
 	ESP_LOGI(RGEO, "Compiled %s %s", __DATE__, __TIME__);
 
 	esp_log_level_set(GPS, ESP_LOG_DEBUG);
-	
-	
-//Inits shouldn't be in tasks...
-	
-//	xTaskCreate(&BuzzerTask,	"Buzzer",	2048,	NULL,	2,	NULL);
-	xTaskCreate(&GPSTask,		"GPS",		2048,	NULL,	3,	NULL);
-//	xTaskCreate(&LCDTask,		"LCD",		2048,	NULL,	8,	NULL);	
-//	xTaskCreate(&PotTask,		"Pots",		2048,	NULL,	8,	NULL);	
-	xTaskCreate(&ButtonInitTask,	"Button",	2048,	NULL,	8,	NULL);
-	xTaskCreate(&LockTask,		"Lock",		2048,	NULL,	8,	NULL);
 
+	
+	Destination.latitude = -34.885354;
+	Destination.longitude = 138.554460;
+		
+	ButtonInit();
+	BuzzerInit();
+	LockInit();
+	GPSInit();
+	LCDInit();
+	
+	xTaskCreate(&GPSTask,		"GPS",		2048,	NULL,	5,	NULL);
+	xTaskCreate(&LCDTask,		"LCD",		2048,	NULL,	3,	NULL);	
 
+	xTaskCreate(&UpdateLCDTask, "UpdateLCD", 2048, NULL, 7, NULL);
 }

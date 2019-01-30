@@ -1,17 +1,10 @@
 
 #include "Peripherals/Buzzer.h"
 
-void BuzzerTask()
+void BuzzerInit()
 {
-	//1. mcpwm gpio initialization
 
-	printf("initializing mcpwm servo control gpio......\n");
 	mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM0A, 4);      //Set GPIO 18 as PWM0A, to which servo is connected
-
-
-	//2. initial mcpwm configuration
-
-	printf("Configuring Initial Parameters of mcpwm......\n");
 
 	mcpwm_config_t pwm_config;
 
@@ -27,13 +20,10 @@ void BuzzerTask()
 
 	mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_0, &pwm_config);      //Configure PWM0A & PWM0B with above settings
 
-//	mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, duty);
-
-	
+	mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, 50.0);
 
 
-	ESP_LOGE(BUZZER, "BUZZER TASK ENDED");
-	vTaskDelete(NULL);
+	ESP_LOGD(BUZZER, "Buzzer Initialised");
 }
 
 

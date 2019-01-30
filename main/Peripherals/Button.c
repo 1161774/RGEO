@@ -20,8 +20,9 @@ static void IRAM_ATTR gpio_isr_handler(void* arg)
 }
 
 
-void ButtonInitTask()
+void ButtonInit()
 {
+	gpio_evt_queue = NULL;
 
 	gpio_config_t io_conf;
 
@@ -49,7 +50,4 @@ void ButtonInitTask()
 
 	//hook isr handler for specific gpio pin
 	gpio_isr_handler_add(GPIO_INPUT_BUTTON, gpio_isr_handler, (void*) GPIO_INPUT_BUTTON);
-
-	
-	vTaskDelete(NULL);
 }

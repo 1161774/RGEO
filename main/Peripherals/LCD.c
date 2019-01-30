@@ -10,6 +10,10 @@
 
 
 
+void DisplayClear()
+{
+	memset(DisplayBuffer, 0x00, DISPLAY_BUFFER_SIZE);   
+}
 
 
 void I2C_Write(i2c_port_t i2c_num, uint8_t* data_wr, size_t size, I2CMode Mode)
@@ -48,8 +52,11 @@ void I2C_Init()
 
 
 
-void LCD_Init()
+void LCDInit()
 {
+	I2C_Init();	
+
+	
 	uint16_t i2cIndex;
 	uint8_t *dat = malloc(100);
 
@@ -88,13 +95,11 @@ void LCD_Init()
 	*(dat + i2cIndex++) = 0x7F; 							
 
 	I2C_Write(I2C_NUM_0, dat, i2cIndex, COMMAND);
+	
+	DisplayClear();
+
 }
 
-
-void DisplayClear()
-{
-	memset(DisplayBuffer, 0x00, DISPLAY_BUFFER_SIZE);   
-}
 
 void DisplayRefresh()
 {
@@ -181,28 +186,24 @@ void DisplayWriteText(uint8_t* Text)
 
 void LCDTask()
 {
-	ESP_LOGI(LCD, "Start I2C");
-	I2C_Init();	
+	while (1)
+	{
+		if (_updateDisplay)
+		{
+			_updateDisplay = false;
+
+			DisplayClear();
+			
+			SetCursor(0, 0);
+			DisplayWriteText(text1);
 	
-
-	ESP_LOGI(LCD, "Init LCD");
-	LCD_Init();
-
-	DisplayClear();
-
-	
-	uint8_t text1[] = "Distance";
-	uint8_t text2[] = "12,345.67m";
-	
-	SetCursor(0, 0);
-	DisplayWriteText(text1);
-	
-	SetCursor(0, 16);
-	DisplayWriteText(text2);
-
-
-	DisplayRefresh();
-
+			SetCursor(0, 16);
+			DisplayWriteText(text2);
+			
+			DisplayRefresh();
+			
+		}
+	}
 
 	ESP_LOGE(LCD, "LCD TASK ENDED");
 	vTaskDelete(NULL);

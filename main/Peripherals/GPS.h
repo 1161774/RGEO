@@ -17,6 +17,10 @@
 
 #define BUF_SIZE (1024)
 
+#define R 6371
+#define TO_RAD (3.1415926536 / 180)
+
+
 extern const char* GPS;
 
 
@@ -72,6 +76,8 @@ double gps_deg_dec(double deg_point);
 void gps_convert_deg_to_dec(double *latitude, char ns, double *longitude, char we);
 uint8_t nmea_valid_checksum(const uint8_t *message);
 uint8_t nmea_get_message_type(const uint8_t *message);
+
+void GPSInit();
 
 double GetDistance(loc_t Loc, loc_t Dest);
 

@@ -63,7 +63,7 @@ void LockBoxTask(void *arg)
 }
 
 
-void LockTask()
+void LockInit()
 {
 	ESP_LOGD(LOCK, "Initialising Lock");
 	
@@ -86,6 +86,4 @@ void LockTask()
 	BoxState = BOX_UNLOCKED;
 	
 	ESP_LOGD(LOCK, "Lock Initialised");
-	vTaskDelete(NULL);
-
 }

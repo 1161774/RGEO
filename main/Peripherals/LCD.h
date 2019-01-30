@@ -85,6 +85,9 @@ typedef enum
 
 
 
+extern bool _updateDisplay;
+extern uint8_t text1[20];
+extern uint8_t text2[20];
 
 
 static uint8_t DisplayBuffer[DISPLAY_BUFFER_SIZE];
@@ -92,6 +95,6 @@ static uint8_t DisplayBuffer[DISPLAY_BUFFER_SIZE];
 
 void I2C_Write();
 
-void I2C_Init();
+void LCDInit();
 
 void LCDTask();
