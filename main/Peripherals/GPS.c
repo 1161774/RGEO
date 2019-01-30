@@ -212,6 +212,8 @@ void GPSTask()
 	uint8_t *data = (uint8_t *) malloc(BUF_SIZE);
 	uint8_t *message = (uint8_t *) malloc(BUF_SIZE);
 
+	memset(message, 0x00, BUF_SIZE);
+	
 	gpgga_t gpgga;
 	gprmc_t gprmc;
 	
@@ -260,23 +262,31 @@ void GPSTask()
 						
 						gps_convert_deg_to_dec(&(gpgga.latitude), gpgga.lat, &(gpgga.longitude), gpgga.lon);
 
+						xSemaphoreTake(Location_mux, portMAX_DELAY);
+
 						Location.latitude = gpgga.latitude;
 						Location.longitude = gpgga.longitude;
 						Location.altitude = gpgga.altitude;
-						
+
 						ESP_LOGI(GPS, "Latitude:\t%f", Location.latitude);
 						ESP_LOGI(GPS, "Longitude:\t%f", Location.longitude);
 						ESP_LOGI(GPS, "Altitude:\t%f", Location.altitude);
+
+						xSemaphoreGive(Location_mux);
 
 						break;
 					case NMEA_GPRMC:
 						nmea_parse_gprmc(message, &gprmc);
 
+						xSemaphoreTake(Location_mux, portMAX_DELAY);
+
 						Location.speed = gprmc.speed;
 						Location.course = gprmc.course;
-						
+
 						ESP_LOGI(GPS, "Speed\t\t%f", Location.speed);
 						ESP_LOGI(GPS, "Course\t\t%f", Location.course);
+
+						xSemaphoreGive(Location_mux);
 
 						break;
 					}

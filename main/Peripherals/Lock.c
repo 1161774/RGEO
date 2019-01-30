@@ -82,8 +82,10 @@ void LockInit()
 	//configure GPIO with the given settings
 	gpio_config(&io_conf);
 	
-
-	BoxState = BOX_UNLOCKED;
-	
 	ESP_LOGD(LOCK, "Lock Initialised");
+	
+	ESP_LOGI(LOCK, "Locking Box...");
+
+	xTaskCreate(&LockBoxTask, "BoxLock", 2048, (void *)BOX_LOCK, 10, NULL);
+
 }

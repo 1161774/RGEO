@@ -37,7 +37,7 @@ typedef enum
 } lockState;
 
 
-lockState BoxState;
+extern lockState BoxState;
 
 void LockBoxTask(void *arg);
 void LockInit();

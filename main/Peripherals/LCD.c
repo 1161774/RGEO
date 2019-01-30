@@ -15,7 +15,6 @@ void DisplayClear()
 	memset(DisplayBuffer, 0x00, DISPLAY_BUFFER_SIZE);   
 }
 
-
 void I2C_Write(i2c_port_t i2c_num, uint8_t* data_wr, size_t size, I2CMode Mode)
 {
 	i2c_cmd_handle_t cmd = i2c_cmd_link_create();
@@ -27,7 +26,6 @@ void I2C_Write(i2c_port_t i2c_num, uint8_t* data_wr, size_t size, I2CMode Mode)
 	i2c_master_cmd_begin(i2c_num, cmd, 1000 / portTICK_RATE_MS);
 	i2c_cmd_link_delete(cmd);
 }
-
 
 void I2C_Init()
 {
@@ -48,9 +46,6 @@ void I2C_Init()
 		0,
 		0);
 }
-
-
-
 
 void LCDInit()
 {
@@ -100,13 +95,10 @@ void LCDInit()
 
 }
 
-
 void DisplayRefresh()
 {
 	I2C_Write(I2C_NUM_0, DisplayBuffer, DISPLAY_BUFFER_SIZE, DATA);
 }
-
-
 
 void SetPixel(uint8_t x, uint8_t y)
 {
@@ -116,7 +108,6 @@ void SetPixel(uint8_t x, uint8_t y)
 	DisplayBuffer[yMajor * SSD1306_LCDWIDTH + x] |= 1 << yMinor;
 	
 }
-
 
 void TogglePixel(uint8_t x, uint8_t y)
 {
@@ -129,7 +120,6 @@ void TogglePixel(uint8_t x, uint8_t y)
 
 bool GetBit(uint16_t Bit, uint8_t * buf)
 {
-	
 	uint16_t bitMajor = Bit / 8;
 	uint16_t bitMinor = Bit % 8;
 	
@@ -149,10 +139,8 @@ void SetCursor(int8_t _x, int8_t _y)
 	}
 }
 
-
 void DisplayWriteText(uint8_t* Text)
 {
-	
 	uint8_t xOff = 0;
 	uint8_t yOff = 0;
 	uint16_t datOff = 0;
@@ -183,7 +171,6 @@ void DisplayWriteText(uint8_t* Text)
 	}
 }
 
-
 void LCDTask()
 {
 	while (1)
@@ -201,7 +188,6 @@ void LCDTask()
 			DisplayWriteText(text2);
 			
 			DisplayRefresh();
-			
 		}
 	}
 

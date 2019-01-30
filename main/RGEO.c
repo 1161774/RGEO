@@ -62,8 +62,13 @@ const char* LOCK	= "Lock";
 
 loc_t Destination;
 
+lockState BoxState;
 
 extern loc_t Location;
+
+SemaphoreHandle_t Location_mux = NULL;
+
+
 
 const uint8_t FreeSans9pt7bBitmaps[] = {
   0xFF, 0xFF, 0xF8, 0xC0, 0xDE, 0xF7, 0x20, 0x09, 0x86, 0x41, 0x91, 0xFF,
@@ -307,16 +312,25 @@ void ButtonTask(void* arg)
 
 void UpdateLCDTask()
 {
+	double d;
+	int i = 0;
+	
 	while (1)
 	{
 		_updateDisplay = true;
+
+		xSemaphoreTake(Location_mux, portMAX_DELAY);
+
+		d = GetDistance(Location, Destination);
 		
-		double d = GetDistance(Location, Destination);
+		xSemaphoreGive(Location_mux);
 
+		
 		sprintf((char *)text1, "Distance");
-		sprintf((char *)text2, "%5.3fkm", d);
+		sprintf((char *)text2, "%d", i++);
+		//		sprintf((char *)text2, "%5.3fkm", d);
 
-		vTaskDelay(1000 / portTICK_RATE_MS);
+		vTaskDelay(101 / portTICK_RATE_MS);
 	}
 }
 
@@ -326,17 +340,21 @@ void app_main()
 	ESP_LOGI(RGEO, "Reverse Geocache");
 	ESP_LOGI(RGEO, "Compiled %s %s", __DATE__, __TIME__);
 
+	Location_mux = xSemaphoreCreateMutex();
+	
 	esp_log_level_set(GPS, ESP_LOG_DEBUG);
 
-	
-	Destination.latitude = -34.885354;
-	Destination.longitude = 138.554460;
+	//Exact opposite side of the world from where I live
+	Destination.latitude = 35.000000;
+	Destination.longitude = -40.000000;
 		
 	ButtonInit();
 	BuzzerInit();
 	LockInit();
 	GPSInit();
 	LCDInit();
+
+	BoxState = BOX_LOCKED;
 	
 	xTaskCreate(&GPSTask,		"GPS",		2048,	NULL,	5,	NULL);
 	xTaskCreate(&LCDTask,		"LCD",		2048,	NULL,	3,	NULL);	

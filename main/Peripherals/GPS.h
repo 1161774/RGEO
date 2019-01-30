@@ -4,6 +4,11 @@
 #include <stdlib.h>
 #include <inttypes.h>
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/event_groups.h"
+
+
 #define _EMPTY 0x00
 #define NMEA_GPRMC 0x01
 #define NMEA_GPRMC_STR "$GPRMC"
@@ -23,6 +28,7 @@
 
 extern const char* GPS;
 
+extern SemaphoreHandle_t Location_mux;
 
 struct location {
 	double latitude;
